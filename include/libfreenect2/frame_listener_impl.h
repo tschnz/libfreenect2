@@ -36,51 +36,52 @@
 
 namespace libfreenect2
 {
-///@addtogroup frame
-///@{
+  ///@addtogroup frame
+  ///@{
 
-/** Storage of multiple different types of frames. */
-typedef std::map<Frame::Type, Frame*> FrameMap;
+  /** Storage of multiple different types of frames. */
+  typedef std::map<Frame::Type, Frame *> FrameMap;
 
-class SyncMultiFrameListenerImpl;
+  class SyncMultiFrameListenerImpl;
 
-/** Collect multiple types of frames. */
-class LIBFREENECT2_API SyncMultiFrameListener : public FrameListener
-{
-public:
-  /**
-   * @param frame_types Use bitwise or to combine multiple types, e.g. `Frame::Ir | Frame::Depth`.
-   */
-  SyncMultiFrameListener(unsigned int frame_types);
-  virtual ~SyncMultiFrameListener();
+  /** Collect multiple types of frames. */
+  class LIBFREENECT2_API SyncMultiFrameListener : public FrameListener
+  {
+  public:
+    /**
+     * @param frame_types Use bitwise or to combine multiple types, e.g. `Frame::Ir | Frame::Depth`.
+     */
+    SyncMultiFrameListener(unsigned int frame_types);
+    virtual ~SyncMultiFrameListener();
 
-  /** Test if there are new frames. Non-blocking. */
-  bool hasNewFrame() const;
+    /** Test if there are new frames. Non-blocking. */
+    bool hasNewFrame() const;
 
-  /** Wait milliseconds for new frames.
-   * @param[out] frame Caller is responsible to release the frames in `frame`.
-   * @param milliseconds Timeout. This parameter is ignored if not built with C++11 threading support.
-   * @return true if a frame is received; false if not.
-   */
-  bool waitForNewFrame(FrameMap &frame, int milliseconds);
+    /** Wait milliseconds for new frames.
+     * @param[out] frame Caller is responsible to release the frames in `frame`.
+     * @param milliseconds Timeout. This parameter is ignored if not built with C++11 threading support.
+     * @return true if a frame is received; false if not.
+     */
+    bool waitForNewFrame(FrameMap &frame, int milliseconds);
 
-  /** Wait indefinitely for new frames.
-   * @param[out] frame Caller is responsible to release the frames in `frame`.
-   */
-  void waitForNewFrame(FrameMap &frame);
+    /** Wait indefinitely for new frames.
+     * @param[out] frame Caller is responsible to release the frames in `frame`.
+     */
+    void waitForNewFrame(FrameMap &frame);
 
-  /** Shortcut to delete all frames in `frame`. */
-  void release(FrameMap &frame);
+    /** Shortcut to delete all frames in `frame`. */
+    void release(FrameMap &frame);
 
-  virtual bool onNewFrame(Frame::Type type, Frame *frame);
-private:
-  SyncMultiFrameListenerImpl *impl_;
+    virtual bool onNewFrame(Frame::Type type, Frame *frame);
 
-  /* Disable copy and assignment constructors */
-  SyncMultiFrameListener(const SyncMultiFrameListener&);
-  SyncMultiFrameListener& operator=(const SyncMultiFrameListener&);
-};
+  private:
+    SyncMultiFrameListenerImpl *impl_;
 
-///@}
+    /* Disable copy and assignment constructors */
+    SyncMultiFrameListener(const SyncMultiFrameListener &);
+    SyncMultiFrameListener &operator=(const SyncMultiFrameListener &);
+  };
+
+  ///@}
 } /* namespace libfreenect2 */
 #endif /* FRAME_LISTENER_IMPL_H_ */

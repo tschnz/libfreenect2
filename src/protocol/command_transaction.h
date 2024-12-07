@@ -24,27 +24,43 @@
  * either License.
  */
 
-#ifndef LED_SETTINGS_H_
-#define LED_SETTINGS_H_
+#ifndef COMMAND_TRANSACTION_H_
+#define COMMAND_TRANSACTION_H_
 
-#include <cstdint>
+#include <vector>
+#include <libusb-1.0/libusb.h>
+#include "command.h"
 
 namespace libfreenect2
 {
-
-  // The following information was found by using the library released by Microsoft under MIT license,
-  // https://github.com/Microsoft/MixedRealityCompanionKit/tree/master/KinectIPD/NuiSensor
-  // Debugging the library assembly shows the original struct name was _PETRA_LED_STATE.
-  struct LedSettings
+  namespace protocol
   {
-    uint16_t LedId;        // LED index  [0, 1]
-    uint16_t Mode;         // 0 = constant, 1 = blink between StartLevel, StopLevel every IntervalInMs ms
-    uint16_t StartLevel;   // LED intensity  [0, 1000]
-    uint16_t StopLevel;    // LED intensity  [0, 1000]
-    uint32_t IntervalInMs; // Blink interval for Mode=1 in milliseconds
-    uint32_t Reserved;     // 0
-  };
 
+    class CommandTransaction
+    {
+    public:
+      static const int ResponseCompleteLength = 16;
+      static const uint32_t ResponseCompleteMagic = 0x0A6FE000;
+
+      typedef std::vector<unsigned char> Result;
+
+      CommandTransaction(libusb_device_handle *handle, int inbound_endpoint, int outbound_endpoint);
+      ~CommandTransaction();
+
+      bool execute(const CommandBase &command, Result &result);
+
+    private:
+      libusb_device_handle *handle_;
+      int inbound_endpoint_, outbound_endpoint_, timeout_;
+      Result response_complete_result_;
+
+      bool send(const CommandBase &command);
+
+      bool receive(Result &result, uint32_t min_length);
+
+      bool isResponseCompleteResult(Result &result, uint32_t sequence);
+    };
+
+  } /* namespace protocol */
 } /* namespace libfreenect2 */
-
-#endif /* LED_SETTINGS_H_ */
+#endif /* COMMAND_TRANSACTION_H_ */

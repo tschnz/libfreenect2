@@ -26,112 +26,119 @@
 
 /** @file packet_processor.h Packet processor definitions. */
 
-#include "libfreenect2/allocator.h"
-#include "libfreenect2/threading.h"
+#include "allocator.h"
+#include "threading.h"
 
 namespace libfreenect2
 {
-class NewAllocator: public Allocator
-{
-public:
-  virtual Buffer *allocate(size_t size)
+  class NewAllocator : public Allocator
   {
-    Buffer *b = new Buffer;
-    b->data = new unsigned char[size];
-    b->length = 0;
-    b->capacity = size;
-    b->allocator = this;
-    return b;
-  }
-
-  virtual void free(Buffer *b)
-  {
-    if (b == NULL)
-      return;
-    delete[] b->data;
-    delete b;
-  }
-};
-
-class PoolAllocatorImpl: public Allocator
-{
-private:
-  Allocator *allocator;
-  Buffer *buffers[2];
-  bool used[2];
-  mutex used_lock;
-  condition_variable available_cond;
-public:
-  PoolAllocatorImpl(Allocator *a): allocator(a), buffers(), used() {}
-
-  Buffer *allocate(size_t size)
-  {
-    unique_lock guard(used_lock);
-    while (used[0] && used[1])
-      WAIT_CONDITION(available_cond, used_lock, guard);
-
-    if (!used[0]) {
-      if (buffers[0] == NULL)
-        buffers[0] = allocator->allocate(size);
-      buffers[0]->length = 0;
-      buffers[0]->allocator = this;
-      used[0] = true;
-      return buffers[0];
-    } else if (!used[1]) {
-      if (buffers[1] == NULL)
-        buffers[1] = allocator->allocate(size);
-      buffers[1]->length = 0;
-      buffers[1]->allocator = this;
-      used[1] = true;
-      return buffers[1];
-    } else {
-      // should never happen
-      return NULL;
+  public:
+    virtual Buffer *allocate(size_t size)
+    {
+      Buffer *b = new Buffer;
+      b->data = new unsigned char[size];
+      b->length = 0;
+      b->capacity = size;
+      b->allocator = this;
+      return b;
     }
-  }
 
-  void free(Buffer *b)
-  {
-    lock_guard guard(used_lock);
-    if (b == buffers[0]) {
-      used[0] = false;
-      available_cond.notify_one();
-    } else if (b == buffers[1]) {
-      used[1] = false;
-      available_cond.notify_one();
+    virtual void free(Buffer *b)
+    {
+      if (b == NULL)
+        return;
+      delete[] b->data;
+      delete b;
     }
-  }
+  };
 
-  ~PoolAllocatorImpl()
+  class PoolAllocatorImpl : public Allocator
   {
-    allocator->free(buffers[0]);
-    allocator->free(buffers[1]);
-    delete allocator;
+  private:
+    Allocator *allocator;
+    Buffer *buffers[2];
+    bool used[2];
+    mutex used_lock;
+    condition_variable available_cond;
+
+  public:
+    PoolAllocatorImpl(Allocator *a) : allocator(a), buffers(), used() {}
+
+    Buffer *allocate(size_t size)
+    {
+      unique_lock guard(used_lock);
+      while (used[0] && used[1])
+        WAIT_CONDITION(available_cond, used_lock, guard);
+
+      if (!used[0])
+      {
+        if (buffers[0] == NULL)
+          buffers[0] = allocator->allocate(size);
+        buffers[0]->length = 0;
+        buffers[0]->allocator = this;
+        used[0] = true;
+        return buffers[0];
+      }
+      else if (!used[1])
+      {
+        if (buffers[1] == NULL)
+          buffers[1] = allocator->allocate(size);
+        buffers[1]->length = 0;
+        buffers[1]->allocator = this;
+        used[1] = true;
+        return buffers[1];
+      }
+      else
+      {
+        // should never happen
+        return NULL;
+      }
+    }
+
+    void free(Buffer *b)
+    {
+      lock_guard guard(used_lock);
+      if (b == buffers[0])
+      {
+        used[0] = false;
+        available_cond.notify_one();
+      }
+      else if (b == buffers[1])
+      {
+        used[1] = false;
+        available_cond.notify_one();
+      }
+    }
+
+    ~PoolAllocatorImpl()
+    {
+      allocator->free(buffers[0]);
+      allocator->free(buffers[1]);
+      delete allocator;
+    }
+  };
+
+  PoolAllocator::PoolAllocator() : impl_(new PoolAllocatorImpl(new NewAllocator))
+  {
   }
-};
 
-PoolAllocator::PoolAllocator():
-  impl_(new PoolAllocatorImpl(new NewAllocator))
-{
-}
+  PoolAllocator::PoolAllocator(Allocator *a) : impl_(new PoolAllocatorImpl(a))
+  {
+  }
 
-PoolAllocator::PoolAllocator(Allocator *a):
-  impl_(new PoolAllocatorImpl(a))
-{
-}
+  PoolAllocator::~PoolAllocator()
+  {
+    delete impl_;
+  }
 
-PoolAllocator::~PoolAllocator()
-{
-  delete impl_;
-}
+  Buffer *PoolAllocator::allocate(size_t size)
+  {
+    return impl_->allocate(size);
+  }
 
-Buffer *PoolAllocator::allocate(size_t size)
-{
-  return impl_->allocate(size);
-}
-
-void PoolAllocator::free(Buffer *b)
-{
-  impl_->free(b);
-}
+  void PoolAllocator::free(Buffer *b)
+  {
+    impl_->free(b);
+  }
 } // namespace libfreenect2

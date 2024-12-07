@@ -1,4 +1,4 @@
-CMAKE_MINIMUM_REQUIRED(VERSION 2.8.12.1)
+cmake_minimum_required(VERSION 3.14)
 
 if(WIN32 AND NOT MINGW)
   if(NOT DEFINED CMAKE_DEBUG_POSTFIX)
@@ -11,7 +11,7 @@ IF(NOT DEFINED CMAKE_BUILD_TYPE)
   SET(CMAKE_BUILD_TYPE RelWithDebInfo CACHE STRING "Choose: RelWithDebInfo Release Debug MinSizeRel None")
 ENDIF()
 
-PROJECT(libfreenect2_examples)
+project(libfreenect2_examples)
 
 SET(MY_DIR ${libfreenect2_examples_SOURCE_DIR})
 SET(DEPENDS_DIR "${MY_DIR}/../depends" CACHE STRING "Dependency directory")
@@ -37,6 +37,8 @@ ENDIF()
 
 INCLUDE_DIRECTORIES(
   ${freenect2_INCLUDE_DIR}
+  ${CMAKE_CURRENT_SOURCE_DIR}/../include
+  ${CMAKE_CURRENT_SOURCE_DIR}/../include/internal
 )
 
 SET(Protonect_src

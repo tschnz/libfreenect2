@@ -36,126 +36,132 @@
 namespace libfreenect2
 {
 
-class DataCallback;
-class RgbPacketProcessor;
-class DepthPacketProcessor;
-class PacketPipelineComponents;
+  class DataCallback;
+  class RgbPacketProcessor;
+  class DepthPacketProcessor;
+  class PacketPipelineComponents;
 
-/** @defgroup pipeline Packet Pipelines
- * Implement various methods to decode color and depth images with different performance and platform support
- *
- * You can construct a specific PacketPipeline object and provide it to Freenect2::openDevice().
- */
-///@{
+  /** @defgroup pipeline Packet Pipelines
+   * Implement various methods to decode color and depth images with different performance and platform support
+   *
+   * You can construct a specific PacketPipeline object and provide it to Freenect2::openDevice().
+   */
+  ///@{
 
-/** Base class for other pipeline classes.
- * Methods in this class are reserved for internal use.
- */
-class LIBFREENECT2_API PacketPipeline
-{
-public:
-  typedef DataCallback PacketParser;
+  /** Base class for other pipeline classes.
+   * Methods in this class are reserved for internal use.
+   */
+  class LIBFREENECT2_API PacketPipeline
+  {
+  public:
+    typedef DataCallback PacketParser;
 
-  PacketPipeline();
-  virtual ~PacketPipeline();
+    PacketPipeline();
+    virtual ~PacketPipeline();
 
-  virtual PacketParser *getRgbPacketParser() const;
-  virtual PacketParser *getIrPacketParser() const;
+    virtual PacketParser *getRgbPacketParser() const;
+    virtual PacketParser *getIrPacketParser() const;
 
-  virtual RgbPacketProcessor *getRgbPacketProcessor() const;
-  virtual DepthPacketProcessor *getDepthPacketProcessor() const;
-protected:
-  PacketPipelineComponents *comp_;
-};
+    virtual RgbPacketProcessor *getRgbPacketProcessor() const;
+    virtual DepthPacketProcessor *getDepthPacketProcessor() const;
 
- class LIBFREENECT2_API DumpPacketPipeline: public PacketPipeline
- {
- public:
-   DumpPacketPipeline();
-   virtual ~DumpPacketPipeline();
+  protected:
+    PacketPipelineComponents *comp_;
+  };
 
-   // These are all required to decode depth data
-   const unsigned char* getDepthP0Tables(size_t* length);
+  class LIBFREENECT2_API DumpPacketPipeline : public PacketPipeline
+  {
+  public:
+    DumpPacketPipeline();
+    virtual ~DumpPacketPipeline();
 
-   const float* getDepthXTable(size_t* length);
-   const float* getDepthZTable(size_t* length);
-   const short* getDepthLookupTable(size_t* length);
- };
+    // These are all required to decode depth data
+    const unsigned char *getDepthP0Tables(size_t *length);
 
-/** Pipeline with CPU depth processing. */
-class LIBFREENECT2_API CpuPacketPipeline : public PacketPipeline
-{
-public:
-  CpuPacketPipeline();
-  virtual ~CpuPacketPipeline();
-};
+    const float *getDepthXTable(size_t *length);
+    const float *getDepthZTable(size_t *length);
+    const short *getDepthLookupTable(size_t *length);
+  };
+
+  /** Pipeline with CPU depth processing. */
+  class LIBFREENECT2_API CpuPacketPipeline : public PacketPipeline
+  {
+  public:
+    CpuPacketPipeline();
+    virtual ~CpuPacketPipeline();
+  };
 
 #ifdef LIBFREENECT2_WITH_OPENGL_SUPPORT
-/** Pipeline with OpenGL depth processing. */
-class LIBFREENECT2_API OpenGLPacketPipeline : public PacketPipeline
-{
-protected:
-  void *parent_opengl_context_;
-  bool debug_;
-public:
-  OpenGLPacketPipeline(void *parent_opengl_context = 0, bool debug = false);
-  virtual ~OpenGLPacketPipeline();
-};
+  /** Pipeline with OpenGL depth processing. */
+  class LIBFREENECT2_API OpenGLPacketPipeline : public PacketPipeline
+  {
+  protected:
+    void *parent_opengl_context_;
+    bool debug_;
+
+  public:
+    OpenGLPacketPipeline(void *parent_opengl_context = 0, bool debug = false);
+    virtual ~OpenGLPacketPipeline();
+  };
 #endif // LIBFREENECT2_WITH_OPENGL_SUPPORT
 
 #ifdef LIBFREENECT2_WITH_OPENCL_SUPPORT
-/** Pipeline with OpenCL depth processing. */
-class LIBFREENECT2_API OpenCLPacketPipeline : public PacketPipeline
-{
-protected:
-  const int deviceId;
-public:
-  OpenCLPacketPipeline(const int deviceId = -1);
-  virtual ~OpenCLPacketPipeline();
-};
+  /** Pipeline with OpenCL depth processing. */
+  class LIBFREENECT2_API OpenCLPacketPipeline : public PacketPipeline
+  {
+  protected:
+    const int deviceId;
 
-/*
- * The class below implement a depth packet processor using the phase unwrapping
- * algorithm described in the paper "Efficient Phase Unwrapping using Kernel
- * Density Estimation", ECCV 2016, Felix Järemo Lawin, Per-Erik Forssen and
- * Hannes Ovren, see http://www.cvl.isy.liu.se/research/datasets/kinect2-dataset/.
- */
-class LIBFREENECT2_API OpenCLKdePacketPipeline : public PacketPipeline
-{
-protected:
-  const int deviceId;
-public:
-  OpenCLKdePacketPipeline(const int deviceId = -1);
-  virtual ~OpenCLKdePacketPipeline();
-};
+  public:
+    OpenCLPacketPipeline(const int deviceId = -1);
+    virtual ~OpenCLPacketPipeline();
+  };
+
+  /*
+   * The class below implement a depth packet processor using the phase unwrapping
+   * algorithm described in the paper "Efficient Phase Unwrapping using Kernel
+   * Density Estimation", ECCV 2016, Felix Järemo Lawin, Per-Erik Forssen and
+   * Hannes Ovren, see http://www.cvl.isy.liu.se/research/datasets/kinect2-dataset/.
+   */
+  class LIBFREENECT2_API OpenCLKdePacketPipeline : public PacketPipeline
+  {
+  protected:
+    const int deviceId;
+
+  public:
+    OpenCLKdePacketPipeline(const int deviceId = -1);
+    virtual ~OpenCLKdePacketPipeline();
+  };
 #endif // LIBFREENECT2_WITH_OPENCL_SUPPORT
 
 #ifdef LIBFREENECT2_WITH_CUDA_SUPPORT
-class LIBFREENECT2_API CudaPacketPipeline : public PacketPipeline
-{
-protected:
-  const int deviceId;
-public:
-  CudaPacketPipeline(const int deviceId = -1);
-  virtual ~CudaPacketPipeline();
-};
+  class LIBFREENECT2_API CudaPacketPipeline : public PacketPipeline
+  {
+  protected:
+    const int deviceId;
 
-/*
- * The class below implement a depth packet processor using the phase unwrapping
- * algorithm described in the paper "Efficient Phase Unwrapping using Kernel
- * Density Estimation", ECCV 2016, Felix Järemo Lawin, Per-Erik Forssen and
- * Hannes Ovren, see http://www.cvl.isy.liu.se/research/datasets/kinect2-dataset/.
- */
-class LIBFREENECT2_API CudaKdePacketPipeline : public PacketPipeline
-{
-protected:
-  const int deviceId;
-public:
-  CudaKdePacketPipeline(const int deviceId = -1);
-  virtual ~CudaKdePacketPipeline();
-};
+  public:
+    CudaPacketPipeline(const int deviceId = -1);
+    virtual ~CudaPacketPipeline();
+  };
+
+  /*
+   * The class below implement a depth packet processor using the phase unwrapping
+   * algorithm described in the paper "Efficient Phase Unwrapping using Kernel
+   * Density Estimation", ECCV 2016, Felix Järemo Lawin, Per-Erik Forssen and
+   * Hannes Ovren, see http://www.cvl.isy.liu.se/research/datasets/kinect2-dataset/.
+   */
+  class LIBFREENECT2_API CudaKdePacketPipeline : public PacketPipeline
+  {
+  protected:
+    const int deviceId;
+
+  public:
+    CudaKdePacketPipeline(const int deviceId = -1);
+    virtual ~CudaKdePacketPipeline();
+  };
 #endif // LIBFREENECT2_WITH_CUDA_SUPPORT
 
-///@}
+  ///@}
 } /* namespace libfreenect2 */
 #endif /* PACKET_PIPELINE_H_ */

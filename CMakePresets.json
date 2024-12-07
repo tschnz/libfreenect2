@@ -1,0 +1,65 @@
+{
+	"version": 6,
+	"configurePresets": [
+		{
+			"name": "DebugBase",
+			"hidden": true,
+			"binaryDir": "build/debug/",
+			"cacheVariables": {
+				"CMAKE_BUILD_TYPE": "Debug"
+			}
+		},
+		{
+			"inherits": "DebugBase",
+			"name": "DebugXcode",
+			"displayName": "Debug - Xcode",
+			"generator": "Xcode"
+		},
+		{
+			"inherits": "DebugBase",
+			"name": "DebugNinja",
+			"displayName": "Debug - Ninja",
+			"generator": "Ninja"
+		},
+		{
+			"name": "ReleaseBase",
+			"hidden": true,
+			"binaryDir": "build/release/",
+			"cacheVariables": {
+				"CMAKE_BUILD_TYPE": "RelWithDebInfo"
+			}
+		},
+		{
+			"inherits": "ReleaseBase",
+			"name": "ReleaseXcode",
+			"displayName": "Release - Xcode",
+			"generator": "Xcode"
+		},
+		{
+			"inherits": "ReleaseBase",
+			"name": "ReleaseNinja",
+			"displayName": "Release - Ninja",
+			"generator": "Ninja"
+		},
+		{
+			"name": "ProfileBase",
+			"hidden": true,
+			"binaryDir": "build/profile/",
+			"cacheVariables": {
+				"CMAKE_BUILD_TYPE": "RelWithDebInfo"
+			}
+		},
+		{
+			"inherits": "ProfileBase",
+			"name": "ProfileXcode",
+			"displayName": "Profile - Xcode",
+			"generator": "Xcode"
+		},
+		{
+			"inherits": "ProfileBase",
+			"name": "ProfileNinja",
+			"displayName": "Profile - Ninja",
+			"generator": "Ninja"
+		}
+	]
+}
