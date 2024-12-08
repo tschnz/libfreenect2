@@ -20,14 +20,21 @@ project(freenect2
     LANGUAGES   CXX
 )
 
+option(ENABLE_OPENCL "Enable OpenCL support" ON)
+
+# TODO test all builds with shared build
 option(BUILD_SHARED_LIBS "Build shared (ON) or static (OFF) libraries" OFF)
-option(BUILD_EXAMPLES "Build examples" OFF)
-option(ENABLE_OPENCL "Enable OpenCL support" OFF)
+
+# TODO test
 option(ENABLE_CUDA "Enable CUDA support" OFF)
 option(ENABLE_OPENGL "Enable OpenGL support" OFF)
 option(ENABLE_VAAPI "Enable VA-API support" OFF)
 option(ENABLE_TEGRAJPEG "Enable Tegra HW JPEG support" OFF)
+option(ENABLE_TINYTHREAD "Use tinythread instead of std::threads" OFF)
+option(ENABLE_OPENNI2 "Enable OpenNI2 support" OFF)
 option(ENABLE_PROFILING "Collect profiling stats (memory consuming)" OFF)
+option(ENABLE_VT "Enable VideoToolbox support (Mac only)" OFF)
+option(BUILD_EXAMPLES "Build examples" OFF)
 
 # Set vars
 if(ENABLE_PROFILING)
@@ -37,18 +44,21 @@ endif()
 set(HAVE_CXX11 enabled)
 
 # Used throughout the project
-set(LIBFREENECT2_WITH_OPENGL_SUPPORT 0)
-set(LIBFREENECT2_WITH_OPENCL_SUPPORT 0)
-set(LIBFREENECT2_OPENCL_ICD_LOADER_IS_OLD 0)
-set(LIBFREENECT2_WITH_CUDA_SUPPORT 0)
-set(LIBFREENECT2_WITH_VT_SUPPORT 0)
-set(LIBFREENECT2_WITH_VAAPI_SUPPORT 0)
-set(LIBFREENECT2_WITH_TURBOJPEG_SUPPORT 1)
-set(LIBFREENECT2_WITH_TEGRAJPEG_SUPPORT 0)
-set(LIBFREENECT2_THREADING_STDLIB 1)
-set(LIBFREENECT2_THREADING_TINYTHREAD 0)
+set(LIBFREENECT2_WITH_OPENGL_SUPPORT ${ENABLE_OPENGL})
+set(LIBFREENECT2_WITH_OPENCL_SUPPORT ${ENABLE_OPENCL})
+set(LIBFREENECT2_WITH_CUDA_SUPPORT ${ENABLE_CUDA})
+set(LIBFREENECT2_WITH_VT_SUPPORT ${ENABLE_VT})
+set(LIBFREENECT2_WITH_VAAPI_SUPPORT ${ENABLE_VAAPI})
+set(LIBFREENECT2_WITH_TURBOJPEG_SUPPORT NOT ${ENABLE_TEGRAJPEG})
+set(LIBFREENECT2_WITH_TEGRAJPEG_SUPPORT ${ENABLE_TEGRAJPEG})
+set(LIBFREENECT2_THREADING_STDLIB NOT ${ENABLE_TINYTHREAD})
+set(LIBFREENECT2_THREADING_TINYTHREAD ${ENABLE_TINYTHREAD})
+set(LIBFREENECT2_WITH_PROFILING ${ENABLE_PROFILING})
+set(LIBFREENECT2_WITH_OPENNI2_SUPPORT ${ENABLE_OPENNI2})
+
+# TODO should we keep those?
 set(LIBFREENECT2_WITH_CXX11_SUPPORT 0)
-set(LIBFREENECT2_WITH_PROFILING 0)
+set(LIBFREENECT2_OPENCL_ICD_LOADER_IS_OLD 0)
 
 # Resolve dependencies if using vcpkg
 if(EXISTS CACHE{VCPKG_MANIFEST_FILE})
@@ -62,59 +72,39 @@ add_library(freenect2::freenect2 ALIAS freenect2)
 # Configure a header file to pass some of the CMake settings
 configure_file(${CMAKE_SOURCE_DIR}/include/libfreenect2/config.h.in
                ${CMAKE_BINARY_DIR}/include/libfreenect2/config.h)
-
-set(INCLUDE_HEADERS
-    ${CMAKE_BINARY_DIR}/include/libfreenect2/config.h
-    ${CMAKE_SOURCE_DIR}/include/libfreenect2/color_settings.h
-    ${CMAKE_SOURCE_DIR}/include/libfreenect2/frame_listener_impl.h
-    ${CMAKE_SOURCE_DIR}/include/libfreenect2/led_settings.h
-    ${CMAKE_SOURCE_DIR}/include/libfreenect2/libfreenect2.hpp
-    ${CMAKE_SOURCE_DIR}/include/libfreenect2/logger.h
-    ${CMAKE_SOURCE_DIR}/include/libfreenect2/packet_pipeline.h
-    ${CMAKE_SOURCE_DIR}/include/libfreenect2/registration.h
-)
     
-set(OPENNI_SOURCES
-    ${CMAKE_SOURCE_DIR}/src/openni2/ColorStream.cpp
-    ${CMAKE_SOURCE_DIR}/src/openni2/ColorStream.hpp
-    ${CMAKE_SOURCE_DIR}/src/openni2/DepthStream.cpp
-    ${CMAKE_SOURCE_DIR}/src/openni2/DepthStream.hpp
-    ${CMAKE_SOURCE_DIR}/src/openni2/DeviceDriver.cpp
-    ${CMAKE_SOURCE_DIR}/src/openni2/IrStream.cpp
-    ${CMAKE_SOURCE_DIR}/src/openni2/IrStream.hpp
-    ${CMAKE_SOURCE_DIR}/src/openni2/Registration.cpp
-    ${CMAKE_SOURCE_DIR}/src/openni2/Registration.hpp
-    ${CMAKE_SOURCE_DIR}/src/openni2/Utility.cpp
-    ${CMAKE_SOURCE_DIR}/src/openni2/Utility.hpp
-    ${CMAKE_SOURCE_DIR}/src/openni2/VideoStream.cpp
-    ${CMAKE_SOURCE_DIR}/src/openni2/VideoStream.hpp
-)
+# target_sources(freenect2 PRIVATE
+#     ${CMAKE_SOURCE_DIR}/src/openni2/ColorStream.cpp
+#     ${CMAKE_SOURCE_DIR}/src/openni2/ColorStream.hpp
+#     ${CMAKE_SOURCE_DIR}/src/openni2/DepthStream.cpp
+#     ${CMAKE_SOURCE_DIR}/src/openni2/DepthStream.hpp
+#     ${CMAKE_SOURCE_DIR}/src/openni2/DeviceDriver.cpp
+#     ${CMAKE_SOURCE_DIR}/src/openni2/IrStream.cpp
+#     ${CMAKE_SOURCE_DIR}/src/openni2/IrStream.hpp
+#     ${CMAKE_SOURCE_DIR}/src/openni2/Registration.cpp
+#     ${CMAKE_SOURCE_DIR}/src/openni2/Registration.hpp
+#     ${CMAKE_SOURCE_DIR}/src/openni2/Utility.cpp
+#     ${CMAKE_SOURCE_DIR}/src/openni2/Utility.hpp
+#     ${CMAKE_SOURCE_DIR}/src/openni2/VideoStream.cpp
+#     ${CMAKE_SOURCE_DIR}/src/openni2/VideoStream.hpp
+# )
     
-set(PROCESSOR_SOURCES_CUDA_RESOURCES
-    ${CMAKE_SOURCE_DIR}/src/processors/cuda/cuda_depth_packet_processor.cu
-    ${CMAKE_SOURCE_DIR}/src/processors/cuda/cuda_kde_depth_packet_processor.cu
-)
+# target_sources(freenect2 PRIVATE
+#     ${CMAKE_SOURCE_DIR}/src/processors/cuda/cuda_depth_packet_processor.cu
+#     ${CMAKE_SOURCE_DIR}/src/processors/cuda/cuda_kde_depth_packet_processor.cu
+# )
     
-set(PROCESSOR_SOURCES_OPENCL
-    ${CMAKE_SOURCE_DIR}/src/processors/opencl/opencl_depth_packet_processor.cpp
-    ${CMAKE_SOURCE_DIR}/src/processors/opencl/opencl_kde_depth_packet_processor.cpp
-)
-set(PROCESSOR_SOURCES_OPENCL_RESOURCES
-    ${CMAKE_SOURCE_DIR}/src/processors/opencl/opencl_depth_packet_processor.cl
-    ${CMAKE_SOURCE_DIR}/src/processors/opencl/opencl_kde_depth_packet_processor.cl
-)
-    
-set(PROCESSOR_SOURCES_OPENGL
-    ${CMAKE_SOURCE_DIR}/src/processors/opengl/opengl_depth_packet_processor.cpp
-)
-set(PROCESSOR_SOURCES_OPENGL_RESOURCES
-    ${CMAKE_SOURCE_DIR}/src/processors/opengl/shaders/debug.fs
-    ${CMAKE_SOURCE_DIR}/src/processors/opengl/shaders/debug.vs
-    ${CMAKE_SOURCE_DIR}/src/processors/opengl/shaders/filter1.fs
-    ${CMAKE_SOURCE_DIR}/src/processors/opengl/shaders/filter1.vs
-    ${CMAKE_SOURCE_DIR}/src/processors/opengl/shaders/stage1.fs
-    ${CMAKE_SOURCE_DIR}/src/processors/opengl/shaders/stage1.vs
-)
+# target_sources(freenect2 PRIVATE
+#     ${CMAKE_SOURCE_DIR}/src/processors/opengl/opengl_depth_packet_processor.cpp
+# )
+# target_sources(freenect2 PRIVATE
+#     ${CMAKE_SOURCE_DIR}/src/processors/opengl/shaders/debug.fs
+#     ${CMAKE_SOURCE_DIR}/src/processors/opengl/shaders/debug.vs
+#     ${CMAKE_SOURCE_DIR}/src/processors/opengl/shaders/filter1.fs
+#     ${CMAKE_SOURCE_DIR}/src/processors/opengl/shaders/filter1.vs
+#     ${CMAKE_SOURCE_DIR}/src/processors/opengl/shaders/stage1.fs
+#     ${CMAKE_SOURCE_DIR}/src/processors/opengl/shaders/stage1.vs
+# )
     
 target_sources(freenect2 PRIVATE 
     ${CMAKE_SOURCE_DIR}/src/processors/async_packet_processor.h
@@ -156,7 +146,16 @@ target_sources(freenect2 PRIVATE
     ${CMAKE_SOURCE_DIR}/src/resource.h
 )
     
-target_sources(freenect2 PRIVATE ${INCLUDE_HEADERS})
+target_sources(freenect2 PRIVATE     
+    ${CMAKE_BINARY_DIR}/include/libfreenect2/config.h
+    ${CMAKE_SOURCE_DIR}/include/libfreenect2/color_settings.h
+    ${CMAKE_SOURCE_DIR}/include/libfreenect2/frame_listener_impl.h
+    ${CMAKE_SOURCE_DIR}/include/libfreenect2/led_settings.h
+    ${CMAKE_SOURCE_DIR}/include/libfreenect2/libfreenect2.hpp
+    ${CMAKE_SOURCE_DIR}/include/libfreenect2/logger.h
+    ${CMAKE_SOURCE_DIR}/include/libfreenect2/packet_pipeline.h
+    ${CMAKE_SOURCE_DIR}/include/libfreenect2/registration.h
+)
 
 # Add include directories
 target_include_directories(freenect2 PUBLIC
@@ -192,30 +191,62 @@ INCLUDE(GenerateExportHeader)
 GENERATE_EXPORT_HEADER(freenect2
     BASE_NAME libfreenect2
     EXPORT_FILE_NAME ${CMAKE_BINARY_DIR}/include/libfreenect2/export.h
-    )
-    
-include(ExternalProject)
-ExternalProject_Add(
-    libusb
-    GIT_REPOSITORY https://github.com/libusb/libusb-cmake.git
-    GIT_TAG main
-    PREFIX ${CMAKE_BINARY_DIR}/libusb
-    CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${CMAKE_BINARY_DIR}/libusb/install
 )
+
+find_package(libusb-1.0 QUIET)
+if (NOT libusb-1.0_FOUND)
+    message(STATUS "libusb-1.0 not found. Building ourselves.")
+    include(ExternalProject)
+    ExternalProject_Add(
+        libusb
+        GIT_REPOSITORY https://github.com/libusb/libusb-cmake.git
+        GIT_TAG main
+        PREFIX ${CMAKE_BINARY_DIR}/libusb
+        CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${CMAKE_BINARY_DIR}/libusb/install
+    )
+else()
+    message(STATUS "libusb-1.0 found. Using the system version.")
+endif()
 add_dependencies(freenect2 libusb)
 target_include_directories(freenect2 PRIVATE ${CMAKE_BINARY_DIR}/libusb/install/include)
 target_link_libraries(freenect2 PRIVATE libusb-1.0)
 
-ExternalProject_Add(
-    turbojpeg
-    GIT_REPOSITORY https://github.com/libjpeg-turbo/libjpeg-turbo.git
-    GIT_TAG main
-    PREFIX ${CMAKE_BINARY_DIR}/turbojpeg
-    CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${CMAKE_BINARY_DIR}/turbojpeg/install
-)
+find_package(turbojpeg QUIET)
+if (NOT turbojpeg_FOUND)
+    message(STATUS "libturbojpeg not found. Building ourselves.")
+    include(ExternalProject)
+    ExternalProject_Add(
+        turbojpeg
+        GIT_REPOSITORY https://github.com/libjpeg-turbo/libjpeg-turbo.git
+        GIT_TAG main
+        PREFIX ${CMAKE_BINARY_DIR}/turbojpeg
+        CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${CMAKE_BINARY_DIR}/turbojpeg/install
+    )
+else()
+    message(STATUS "libturbojpeg found. Using the system version.")
+endif()
 add_dependencies(freenect2 turbojpeg)
 target_include_directories(freenect2 PRIVATE ${CMAKE_BINARY_DIR}/turbojpeg/install/include)
 target_link_libraries(freenect2 PRIVATE libturbojpeg)
+
+if(ENABLE_OPENCL)
+    find_package(OpenCL QUIET)
+    if (NOT OpenCL_FOUND)
+        message(STATUS "OpenCL not found. Building ourselves.")
+        include(ExternalProject)
+        ExternalProject_Add(
+            opencl
+            GIT_REPOSITORY https://github.com/KhronosGroup/OpenCL-Headers.git
+            GIT_TAG main
+            PREFIX ${CMAKE_BINARY_DIR}/opencl
+            CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${CMAKE_BINARY_DIR}/opencl/install
+        )
+    else()
+        message(STATUS "OpenCL found. Downloading headers.")
+    endif()
+    add_dependencies(freenect2 opencl)
+    target_include_directories(freenect2 PRIVATE ${CMAKE_BINARY_DIR}/opencl/install/include)
+endif()
 
 install(
     DIRECTORY   include/libfreenect2
