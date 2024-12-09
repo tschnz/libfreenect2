@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 3.21)
 
 set(FREENECT2_MASTER_PROJECT OFF)
 if (CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
@@ -46,6 +46,7 @@ set(HAVE_CXX11 enabled)
 # Used throughout the project
 set(LIBFREENECT2_WITH_OPENGL_SUPPORT ${ENABLE_OPENGL})
 set(LIBFREENECT2_WITH_OPENCL_SUPPORT ${ENABLE_OPENCL})
+set(CL_HPP_TARGET_OPENCL_VERSION 300)
 set(LIBFREENECT2_WITH_CUDA_SUPPORT ${ENABLE_CUDA})
 set(LIBFREENECT2_WITH_VT_SUPPORT ${ENABLE_VT})
 set(LIBFREENECT2_WITH_VAAPI_SUPPORT ${ENABLE_VAAPI})
@@ -87,11 +88,6 @@ configure_file(${CMAKE_SOURCE_DIR}/include/libfreenect2/config.h.in
 #     ${CMAKE_SOURCE_DIR}/src/openni2/Utility.hpp
 #     ${CMAKE_SOURCE_DIR}/src/openni2/VideoStream.cpp
 #     ${CMAKE_SOURCE_DIR}/src/openni2/VideoStream.hpp
-# )
-    
-# target_sources(freenect2 PRIVATE
-#     ${CMAKE_SOURCE_DIR}/src/processors/cuda/cuda_depth_packet_processor.cu
-#     ${CMAKE_SOURCE_DIR}/src/processors/cuda/cuda_kde_depth_packet_processor.cu
 # )
     
 # target_sources(freenect2 PRIVATE
@@ -193,10 +189,13 @@ GENERATE_EXPORT_HEADER(freenect2
     EXPORT_FILE_NAME ${CMAKE_BINARY_DIR}/include/libfreenect2/export.h
 )
 
+include(ExternalProject)
+# ------------------------------
+# Libusb-1.0
+# ------------------------------
 find_package(libusb-1.0 QUIET)
 if (NOT libusb-1.0_FOUND)
     message(STATUS "libusb-1.0 not found. Building ourselves.")
-    include(ExternalProject)
     ExternalProject_Add(
         libusb
         GIT_REPOSITORY https://github.com/libusb/libusb-cmake.git
@@ -204,17 +203,17 @@ if (NOT libusb-1.0_FOUND)
         PREFIX ${CMAKE_BINARY_DIR}/libusb
         CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${CMAKE_BINARY_DIR}/libusb/install
     )
-else()
-    message(STATUS "libusb-1.0 found. Using the system version.")
 endif()
 add_dependencies(freenect2 libusb)
 target_include_directories(freenect2 PRIVATE ${CMAKE_BINARY_DIR}/libusb/install/include)
 target_link_libraries(freenect2 PRIVATE libusb-1.0)
 
+# ------------------------------^
+# TurboJPEG
+# ------------------------------
 find_package(turbojpeg QUIET)
 if (NOT turbojpeg_FOUND)
     message(STATUS "libturbojpeg not found. Building ourselves.")
-    include(ExternalProject)
     ExternalProject_Add(
         turbojpeg
         GIT_REPOSITORY https://github.com/libjpeg-turbo/libjpeg-turbo.git
@@ -222,30 +221,69 @@ if (NOT turbojpeg_FOUND)
         PREFIX ${CMAKE_BINARY_DIR}/turbojpeg
         CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${CMAKE_BINARY_DIR}/turbojpeg/install
     )
-else()
-    message(STATUS "libturbojpeg found. Using the system version.")
 endif()
 add_dependencies(freenect2 turbojpeg)
 target_include_directories(freenect2 PRIVATE ${CMAKE_BINARY_DIR}/turbojpeg/install/include)
 target_link_libraries(freenect2 PRIVATE libturbojpeg)
 
+# ------------------------------^
+# Enable OpenCL
+# ------------------------------
 if(ENABLE_OPENCL)
     find_package(OpenCL QUIET)
     if (NOT OpenCL_FOUND)
         message(STATUS "OpenCL not found. Building ourselves.")
-        include(ExternalProject)
         ExternalProject_Add(
-            opencl
-            GIT_REPOSITORY https://github.com/KhronosGroup/OpenCL-Headers.git
+            opencl-sdk
+            GIT_REPOSITORY https://github.com/KhronosGroup/OpenCL-SDK.git
             GIT_TAG main
-            PREFIX ${CMAKE_BINARY_DIR}/opencl
-            CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${CMAKE_BINARY_DIR}/opencl/install
+            PREFIX ${CMAKE_BINARY_DIR}/opencl-sdk
+            CMAKE_ARGS 
+                -DCMAKE_INSTALL_PREFIX=${CMAKE_BINARY_DIR}/opencl-sdk/install
+                -DBUILD_TESTING=0
+                -DBUILD_DOCS=0
+                -DBUILD_EXAMPLES=0
+                -DBUILD_TESTS=0
+                -DOPENCL_SDK_BUILD_SAMPLES=0
+                -DOPENCL_SDK_TEST_SAMPLES=0
         )
-    else()
-        message(STATUS "OpenCL found. Downloading headers.")
     endif()
-    add_dependencies(freenect2 opencl)
-    target_include_directories(freenect2 PRIVATE ${CMAKE_BINARY_DIR}/opencl/install/include)
+    add_dependencies(freenect2 opencl-sdk)
+
+    target_sources(freenect2 PRIVATE
+        ${CMAKE_SOURCE_DIR}/src/processors/opencl/opencl_depth_packet_processor.cpp
+        ${CMAKE_SOURCE_DIR}/src/processors/opencl/opencl_depth_packet_processor.cl
+        ${CMAKE_SOURCE_DIR}/src/processors/opencl/opencl_kde_depth_packet_processor.cpp
+        ${CMAKE_SOURCE_DIR}/src/processors/opencl/opencl_kde_depth_packet_processor.cl
+    )
+    
+    target_include_directories(freenect2 PRIVATE ${CMAKE_BINARY_DIR}/opencl-sdk/install/include)
+    target_link_libraries(freenect2 PRIVATE OpenCL)
+endif()
+
+# ------------------------------^
+# Enable CUDA
+# ------------------------------
+if(ENABLE_CUDA)
+    find_package(CUDA QUIET)
+    if (NOT CUDA_FOUND)
+        message(STATUS "CUDA not found. Downloading headers.")
+            ExternalProject_Add(
+            cuda
+            GIT_REPOSITORY
+            GIT_TAG main
+            PREFIX ${CMAKE_BINARY_DIR}/cuda
+            CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${CMAKE_BINARY_DIR}/cuda/install
+        )
+    endif()
+    add_dependencies(freenect2 cuda)
+    
+    target_sources(freenect2 PRIVATE
+        ${CMAKE_SOURCE_DIR}/src/processors/cuda/cuda_depth_packet_processor.cu
+        ${CMAKE_SOURCE_DIR}/src/processors/cuda/cuda_kde_depth_packet_processor.cu
+    )
+
+    target_include_directories(freenect2 PRIVATE ${CMAKE_BINARY_DIR}/cuda/install/include)
 endif()
 
 install(

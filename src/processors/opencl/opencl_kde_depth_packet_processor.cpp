@@ -26,10 +26,10 @@
 
 /** @file opencl_depth_packet_processor.cl Implementation of the OpenCL depth packet processor. */
 
-#include <libfreenect2/depth_packet_processor.h>
-#include <libfreenect2/resource.h>
-#include <libfreenect2/protocol/response.h>
-#include <libfreenect2/logging.h>
+#include "../depth_packet_processor.h"
+#include "../../resource.h"
+#include "../../protocol/response.h"
+#include "../../logging.h"
 
 #include <sstream>
 
@@ -41,13 +41,13 @@
 
 #ifdef LIBFREENECT2_OPENCL_ICD_LOADER_IS_OLD
 #define CL_USE_DEPRECATED_OPENCL_1_1_APIS
-#include <CL/cl.h>
+#include <CL/opencl.hpp>
 #ifdef CL_VERSION_1_2
 #undef CL_VERSION_1_2
 #endif // CL_VERSION_1_2
 #endif // LIBFREENECT2_OPENCL_ICD_LOADER_IS_OLD
 
-#include <CL/cl.hpp>
+#include <CL/opencl.hpp>
 
 #ifndef REG_OPENCL_FILE
 #define REG_OPENCL_FILE ""
@@ -284,7 +284,6 @@ namespace libfreenect2
       newIrFrame();
       newDepthFrame();
 
-      const int CL_ICDL_VERSION = 2;
       typedef cl_int (*icdloader_func)(int, size_t, void *, size_t *);
 #ifdef _MSC_VER
 #pragma warning(push)
@@ -696,8 +695,7 @@ namespace libfreenect2
       std::string options;
       generateOptions(options);
 
-      cl::Program::Sources source(1, std::make_pair(sources.c_str(), sources.length()));
-      CHECK_CL_PARAM(program = cl::Program(context, source, &err));
+      CHECK_CL_PARAM(program = cl::Program(sources, false, &err));
 
       CHECK_CL_ON_FAIL(program.build(options.c_str()),
                        LOG_ERROR << "failed to build program: " << err;
