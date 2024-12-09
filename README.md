@@ -1,5 +1,7 @@
 # libfreenect2
 
+libfreenect2 fork with overhauled cmake build system.
+
 ## Table of Contents
 
 * [Description](README.md#description)
