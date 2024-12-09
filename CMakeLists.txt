@@ -9,6 +9,22 @@ option(FREENECT2_STATIC_RUNTIME "Link to static runtime (Windows-only)" ${FREENE
 option(FREENECT2_TEST "Build the tests" ${FREENECT2_MASTER_PROJECT})
 option(FREENECT2_EXAMPLES "Build the examples" ${FREENECT2_MASTER_PROJECT})
 
+# Options
+option(FREENECT2_FREENECT2_ENABLE_OPENCL "Enable OpenCL support" ON)
+option(FREENECT2_FREENECT2_ENABLE_TINYTHREAD "Use tinythread instead of std::threads" OFF)
+option(FREENECT2_BUILD_EXAMPLES "Build examples" ON)
+
+# TODO test
+option(FREENECT2_FREENECT2_ENABLE_CUDA "Enable CUDA support" OFF)
+option(FREENECT2_FREENECT2_ENABLE_OPENGL "Enable OpenGL support" OFF)
+option(FREENECT2_FREENECT2_ENABLE_VAAPI "Enable VA-API support" OFF)
+option(FREENECT2_FREENECT2_ENABLE_TEGRAJPEG "Enable Tegra HW JPEG support" OFF)
+option(FREENECT2_FREENECT2_ENABLE_OPENNI2 "Enable OpenNI2 support" OFF)
+option(FREENECT2_FREENECT2_ENABLE_PROFILING "Collect profiling stats (memory consuming)" OFF)
+option(FREENECT2_FREENECT2_ENABLE_VT "Enable VideoToolbox support (Mac only)" OFF)
+# TODO test all builds with shared build
+option(BUILD_SHARED_LIBS "Build shared (ON) or static (OFF) libraries" OFF)
+
 if(FREENECT2_STATIC_RUNTIME)
     cmake_policy(SET CMP0091 NEW)
     set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
@@ -20,54 +36,35 @@ project(freenect2
     LANGUAGES   CXX
 )
 
-# Options
-option(ENABLE_OPENCL "Enable OpenCL support" ON)
-option(ENABLE_TINYTHREAD "Use tinythread instead of std::threads" ON)
-
-# TODO test all builds with shared build
-option(BUILD_SHARED_LIBS "Build shared (ON) or static (OFF) libraries" OFF)
-
-# TODO test
-option(ENABLE_CUDA "Enable CUDA support" OFF)
-option(ENABLE_OPENGL "Enable OpenGL support" OFF)
-option(ENABLE_VAAPI "Enable VA-API support" OFF)
-option(ENABLE_TEGRAJPEG "Enable Tegra HW JPEG support" OFF)
-option(ENABLE_OPENNI2 "Enable OpenNI2 support" OFF)
-option(ENABLE_PROFILING "Collect profiling stats (memory consuming)" OFF)
-option(ENABLE_VT "Enable VideoToolbox support (Mac only)" OFF)
-option(BUILD_EXAMPLES "Build examples" OFF)
-
 # Set vars
-if(ENABLE_PROFILING)
+if(FREENECT2_ENABLE_PROFILING)
   set(LIBFREENECT2_WITH_PROFILING 1)
 endif()
 
 set(HAVE_CXX11 enabled)
 
-if(ENABLE_TEGRAJPEG)
+# Set internal vars
+if(FREENECT2_ENABLE_TEGRAJPEG)
     set(LIBFREENECT2_WITH_TEGRAJPEG_SUPPORT 1)
     set(LIBFREENECT2_WITH_TURBOJPEG_SUPPORT 0)
 else()
     set(LIBFREENECT2_WITH_TEGRAJPEG_SUPPORT 0)
     set(LIBFREENECT2_WITH_TURBOJPEG_SUPPORT 1)
 endif()
-
-if(ENABLE_TINYTHREAD)
+if(FREENECT2_ENABLE_TINYTHREAD)
     set(LIBFREENECT2_THREADING_TINYTHREAD 1)
     set(LIBFREENECT2_THREADING_STDLIB 0)
 else()
     set(LIBFREENECT2_THREADING_TINYTHREAD 0)
     set(LIBFREENECT2_THREADING_STDLIB 1)
 endif()
-
-# Used throughout the project
-set(LIBFREENECT2_WITH_OPENGL_SUPPORT ${ENABLE_OPENGL})
-set(LIBFREENECT2_WITH_OPENCL_SUPPORT ${ENABLE_OPENCL})
-set(LIBFREENECT2_WITH_CUDA_SUPPORT ${ENABLE_CUDA})
-set(LIBFREENECT2_WITH_VT_SUPPORT ${ENABLE_VT})
-set(LIBFREENECT2_WITH_VAAPI_SUPPORT ${ENABLE_VAAPI})
-set(LIBFREENECT2_WITH_PROFILING ${ENABLE_PROFILING})
-set(LIBFREENECT2_WITH_OPENNI2_SUPPORT ${ENABLE_OPENNI2})
+set(LIBFREENECT2_WITH_OPENGL_SUPPORT ${FREENECT2_ENABLE_OPENGL})
+set(LIBFREENECT2_WITH_OPENCL_SUPPORT ${FREENECT2_ENABLE_OPENCL})
+set(LIBFREENECT2_WITH_CUDA_SUPPORT ${FREENECT2_ENABLE_CUDA})
+set(LIBFREENECT2_WITH_VT_SUPPORT ${FREENECT2_ENABLE_VT})
+set(LIBFREENECT2_WITH_VAAPI_SUPPORT ${FREENECT2_ENABLE_VAAPI})
+set(LIBFREENECT2_WITH_PROFILING ${FREENECT2_ENABLE_PROFILING})
+set(LIBFREENECT2_WITH_OPENNI2_SUPPORT ${FREENECT2_ENABLE_OPENNI2})
 
 message(STATUS "OpenGL support: ${LIBFREENECT2_WITH_OPENGL_SUPPORT}")
 message(STATUS "OpenCL support: ${LIBFREENECT2_WITH_OPENCL_SUPPORT}")
@@ -253,7 +250,7 @@ target_link_libraries(freenect2 PRIVATE libturbojpeg)
 # ------------------------------^
 # Enable OpenCL
 # ------------------------------
-if(ENABLE_OPENCL)
+if(FREENECT2_ENABLE_OPENCL)
     find_package(OpenCL QUIET)
     if (NOT OpenCL_FOUND)
         message(STATUS "OpenCL not found. Building ourselves.")
@@ -288,7 +285,7 @@ endif()
 # ------------------------------^
 # Enable CUDA
 # ------------------------------
-if(ENABLE_CUDA)
+if(FREENECT2_ENABLE_CUDA)
     find_package(CUDA QUIET)
     if (NOT CUDA_FOUND)
         message(STATUS "CUDA not found. Downloading headers.")
