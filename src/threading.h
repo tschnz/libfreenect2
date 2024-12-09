@@ -65,7 +65,7 @@ namespace libfreenect2
 
 #ifdef LIBFREENECT2_THREADING_TINYTHREAD
 
-#include <tinythread.h>
+#include "tinythread/tinythread.h"
 
 // TODO: work around for tinythread incompatibility
 #define WAIT_CONDITION(var, mutex, lock) var.wait(mutex);
